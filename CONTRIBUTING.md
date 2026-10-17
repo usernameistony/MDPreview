@@ -78,6 +78,8 @@ MDP_PERF=1 swift test -c release --filter PerfProbe
 
 ## 发布
 
-DMG 不进 git，作为 GitHub Release 附件分发。`package_app.sh` 先给两个 Quick Look 扩展
-带 entitlements 签名（沙盒是扩展加载的前提），再签外层 App。正式分发需 Developer ID 签名 +
-`xcrun notarytool` 公证，见 `package_app.sh` 顶部注释。
+从 2.0 起只通过 Mac App Store 分发：`./archive_app_store.sh --upload` 归档并上传到 App Store Connect。
+GitHub Release 只放发布说明，不再附 DMG。
+
+`package_app.sh` 仍可在本地打 DMG 自用：先给两个 Quick Look 扩展带 entitlements 签名
+（沙盒是扩展加载的前提），再签外层 App。签名和公证的选项见脚本顶部注释。

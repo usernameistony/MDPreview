@@ -7,7 +7,7 @@
 macOS 上的 Markdown 阅读 / 轻量编辑器。用 SwiftUI + AppKit + `apple/swift-markdown` 写成，
 不带 WebView。v2.0 之前叫 MDPreview。
 
-当前版本：v1.5.0 · 运行需 macOS 14+ · MIT 许可
+当前版本：v2.0.0 · 运行需 macOS 14+ · MIT 许可
 
 ![深色模式下的分屏视图，左侧是大纲](docs/screenshots/split-dark-zh.png)
 
@@ -68,19 +68,19 @@ macOS 上的 Markdown 阅读 / 轻量编辑器。用 SwiftUI + AppKit + `apple/s
 5. 无障碍：VoiceOver 标签、增强对比度、减少动态效果。
 6. 中英文 README。
 
-DMG 仍是 ad-hoc 签名，没有公证（需要 Apple Developer 账号），首次打开需要多一步（见[安装](#安装)）。
+1.x 的 DMG 只有 ad-hoc 签名，没有公证。
 
 **v1.4 — 编辑体验**（随 1.5.0 一起发布）
 格式快捷键（`⌘B` / `⌘I` / `⌘K` / `⇧⌘K`）；列表回车续写、Tab 缩进；粘贴 / 拖入图片自动存到 `assets/`；
 源码视图里加粗不再被染成斜体色。
 
-**v1.5（当前）— 性能与热重载**
+**v1.5 — 性能与热重载**
 阅读区只重新渲染改动的块。160KB 文档改一个字，阅读区更新从约 0.8 秒降到约 30 毫秒。
 外部修改刷新后不再标成「已编辑」；文件被删后又出现时，继续监听。
 
-**v2.0（进行中）— Markit，Mac App Store**
-从 MDPreview 改名为 Markit。
-上架 Mac App Store，同时发布经过公证的 DMG。App 在沙盒里运行，显示本地图片、打开链接的文件前，会请你允许访问文档所在的文件夹。
+**v2.0（当前）— Markit，Mac App Store**
+从 MDPreview 改名为 Markit，上架 Mac App Store，这个版本不提供 DMG。
+App 在沙盒里运行，显示本地图片、打开链接的文件前，会请你允许访问文档所在的文件夹。
 
 **以后**
 行内图片、数学公式、HTML 块、更严谨的代码高亮、更多语言。
@@ -103,20 +103,12 @@ DMG 仍是 ad-hoc 签名，没有公证（需要 Apple Developer 账号），首
 
 ## 安装
 
-从 [Releases](https://github.com/TonyT1226/MDPreview/releases) 下载 `Markit-<版本号>.dmg`（如 `Markit-2.0.0.dmg`），
-把 `Markit.app` 拖进「应用程序」。
+从 [Mac App Store](https://apps.apple.com/app/id6821136481) 安装 Markit，免费。
 
-App 没有公证，第一次打开会被系统拦下：
-
-- **macOS 15 及以上**：双击 Markit，关掉提示框。打开「系统设置 › 隐私与安全性」，
-  往下翻到「安全性」，点 Markit 旁边的 **仍要打开**，输入密码。之后就能正常打开。
-- **macOS 14**：在「应用程序」里右键 Markit，选「打开」。
-
-也可以在终端里去掉下载隔离标记，只需要做一次：
-
-```bash
-xattr -dr com.apple.quarantine /Applications/Markit.app
-```
+> **备注：** 从 v2.0 起，Markit 只通过 App Store 发布，GitHub Releases 不再提供 DMG。
+> 旧的 MDPreview DMG（v1.5.0 及更早）仍在 [Releases](https://github.com/TonyT1226/MDPreview/releases) 里，
+> 但没有公证，也不再更新。用过 MDPreview 的话，装好 Markit 后删掉 `MDPreview.app`，
+> 这样访达会用 Markit 的快速查看扩展。
 
 Finder 预览扩展在 App 放进「应用程序」并打开过一次后生效。
 如果空格预览还是纯文本，到「系统设置 › 通用 › 登录项与扩展 › 快速查看」里确认 Markit 已勾选。
@@ -135,7 +127,7 @@ brew install xcodegen
 xcodegen generate
 open MDPreview.xcodeproj       # 在 Xcode 里运行 / 预览 / 归档
 
-./package_app.sh              # 或：命令行打包 DMG
+./package_app.sh              # 或：命令行打包本地 DMG
 ```
 
 如果 `swift test` 报 `no such module 'Testing'`、SwiftUI 预览打不开、运行后不出窗口，

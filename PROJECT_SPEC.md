@@ -183,7 +183,7 @@ md-reader/
 | 运行 / 预览 / 归档 | `open MDPreview.xcodeproj`（需完整版 Xcode，非 CLT） |
 | 打包 DMG | `./package_app.sh`：Release 免签构建 → `ditto` 到 `/tmp` 清扩展属性 → 两个扩展带 entitlements ad-hoc 签名 → 带沙盒 entitlements 签 App → `hdiutil` 组 DMG |
 | CI | `.github/workflows/ci.yml`：`macos-15` 跑 `swift build` / `swift test` / `xcodebuild`（`CODE_SIGNING_ALLOWED=NO`） |
-| 分发 | DMG 不入库，作为 GitHub Release 附件；正式分发需 Developer ID + `notarytool` |
+| 分发 | 从 2.0 起只发 Mac App Store（`archive_app_store.sh`）；GitHub Release 不附 DMG（2026-10-16 定） |
 
 依赖策略：`swift-markdown` 上游无 semver tag，`Package.swift` 用 `revision` 锁 commit；`Package.resolved` 不入库
 （在 Xcode 与命令行 SPM 之间 `originHash` 抖动无意义）。升级 = 改 revision → `swift package update` → 验回归。
@@ -199,7 +199,7 @@ md-reader/
 | G14 | 代码块不横向滚动，长行折行显示；`NSTextBlock` 没有圆角 | 与 v1.2 的 SwiftUI 版观感不同 | 接受 |
 | G16 | Quick Look 扩展在沙盒里没有网络权限，远程图片显示占位；相对路径图片能否读到取决于系统授予的访问范围 | 预览图片不全 | 接受 |
 | G17 | 核心库静态链接进 App 和两个扩展，DMG 从约 3.6MB 变成约 7.5MB | 体积 | 暂不排期（可改成动态框架） |
-| G18 | 没有公证：DMG 仍是 ad-hoc 签名 | 首次打开要到「隐私与安全性」点「仍要打开」（macOS 14 可右键 › 打开） | v2.0 |
+| G18 | 1.x 的 DMG 没有公证 | 首次打开要到「隐私与安全性」点「仍要打开」 | 不再处理：2.0 起只发 App Store |
 
 **v1.5 已解决**：~~G12 静默刷新标成「已编辑」、文件删后停止监听~~、~~G15 每次改动整篇重排~~。
 **v1.3 已解决**：~~G1 阅读区不能跨块选择 / 无 ⌘F~~、~~G2 无偏好设置~~、~~G3 编辑器无行号~~、
@@ -247,9 +247,9 @@ md-reader/
 性能（`MDP_PERF=1 swift test --filter PerfProbe`，Debug 构建，160KB 文档，视口在文档中部，改一个字）：
 整篇重排约 0.8 秒，增量更新约 30 毫秒。解析仍是整篇（约 180 毫秒），在后台线程，不占主线程。
 
-### v2.0 — 改名 Markit，上架 Mac App Store（进行中，本地分支 `v1.6-sandbox`，上架前不推送）
+### v2.0 — 改名 Markit，上架 Mac App Store（2026-10-16 上架，已合并进 main）
 
-2.0.0 是第一个 App Store 版本（原计划叫 1.6.0；改名后定为 2.0.0：比所有旧版本号高，标签也不和已有的 `v1.0.0` 冲突）。同一版本在 GitHub 发布经过公证的 DMG。
+2.0.0 是第一个 App Store 版本（原计划叫 1.6.0；改名后定为 2.0.0：比所有旧版本号高，标签也不和已有的 `v1.0.0` 冲突）。原计划同时在 GitHub 发布公证 DMG，2026-10-16 改为只发 App Store。
 
 改名：从 2.0 起 App 叫 **Markit**（「MDPreview」在 App Store 已被占用，而且 App 不只是预览）。商店名称 `Markit: Simple Markdown Editor`。
 改的是用户看得到的名字：`PRODUCT_NAME`（`Markit.app`）、显示名、两个扩展的显示名、界面文字、README、隐私政策、DMG / pkg 文件名。
@@ -268,7 +268,7 @@ md-reader/
 | **2.0.9 商店资料** | 未做。截图（1280×800 / 1440×900 / 2560×1600 / 2880×1800）、中英文描述和关键词、隐私问卷选「不收集数据」、年龄分级、价格、地区。 |
 | **2.0.10 发布** | 未做。提交审核前，隐私政策的网址必须能打开，所以要先单独把隐私政策推到 main；审核通过后合并分支、推送、发 GitHub Release。 |
 
-GitHub 上的 DMG 也开沙盒，和 App Store 版用同一份构建（2026-09-27 定）。DMG 用户同样要授权文件夹。`package_app.sh` 签 App 时已带上 `MDPreview.entitlements`。
+`package_app.sh` 打的本地 DMG 也开沙盒，和 App Store 版用同一份构建，签 App 时带上 `MDPreview.entitlements`。
 
 还要确认：从 1.5（没开沙盒）升级到 2.0 后，偏好设置在 `~/Library/Preferences`，沙盒版读的是容器里的那份，字体、主题等设置可能回到默认值。要在真实升级场景里验证；如果确实丢失，用 `container-migration.plist` 迁移。
 

@@ -7,7 +7,7 @@ English · [简体中文](README.zh-Hans.md)
 A Markdown reader and light editor for macOS. Written with SwiftUI, AppKit and
 `apple/swift-markdown`. No WebView. Called MDPreview before v2.0.
 
-Current version: v1.5.0 · Requires macOS 14+ · MIT license
+Current version: v2.0.0 · Requires macOS 14+ · MIT license
 
 ![Split view in dark mode, with the outline sidebar](docs/screenshots/split-dark.png)
 
@@ -72,22 +72,21 @@ PDF export and printing; reload on external change; all UI text moved to one pla
 5. Accessibility: VoiceOver labels, Increase Contrast, Reduce Motion.
 6. English and Chinese README.
 
-The DMG is still ad-hoc signed and not notarized (that needs an Apple Developer account),
-so the first launch needs an extra step (see [Install](#install)).
+The 1.x DMGs are ad-hoc signed and not notarized.
 
 **v1.4 — editing** (released as part of 1.5.0)
 Formatting shortcuts (`⌘B` / `⌘I` / `⌘K` / `⇧⌘K`); list continuation on Return and Tab indenting;
 pasted or dropped images saved to `assets/`; bold no longer colored as italic in the source view.
 
-**v1.5 (current) — performance, reload**
+**v1.5 — performance, reload**
 The reading view re-renders only the blocks that changed. On a 160 KB document, one edited character
 takes about 30 ms instead of about 0.8 s. Reloading after an external change no longer marks the
 document as edited, and a deleted file that comes back is watched again.
 
-**v2.0 (in progress) — Markit, Mac App Store**
-Renamed from MDPreview to Markit.
-Release on the Mac App Store, plus a notarized DMG. The app runs in the sandbox: before it shows local
-images or opens linked files, it asks you to allow access to the document's folder.
+**v2.0 (current) — Markit, Mac App Store**
+Renamed from MDPreview to Markit. Released on the Mac App Store; there is no DMG for this version.
+The app runs in the sandbox: before it shows local images or opens linked files, it asks you to
+allow access to the document's folder.
 
 **Later**
 Inline images, math, HTML blocks, more accurate code highlighting, more languages.
@@ -110,21 +109,13 @@ Inline images, math, HTML blocks, more accurate code highlighting, more language
 
 ## Install
 
-Download `Markit-<version>.dmg` (for example `Markit-2.0.0.dmg`) from [Releases](https://github.com/TonyT1226/MDPreview/releases)
-and drag `Markit.app` into Applications.
+Install Markit from the [Mac App Store](https://apps.apple.com/app/id6821136481). It is free.
 
-The app is not notarized, so macOS blocks the first launch:
-
-- **macOS 15 and later**: double-click Markit and close the warning. Open System Settings ›
-  Privacy & Security, scroll down to Security, click **Open Anyway** next to Markit, and
-  enter your password. After that it opens normally.
-- **macOS 14**: right-click Markit in Applications and choose Open.
-
-Or, in Terminal, remove the download quarantine flag once:
-
-```bash
-xattr -dr com.apple.quarantine /Applications/Markit.app
-```
+> **Note:** from v2.0, Markit is distributed only through the App Store. GitHub Releases no longer
+> include a DMG. The older MDPreview DMGs (v1.5.0 and earlier) are still on
+> [Releases](https://github.com/TonyT1226/MDPreview/releases), but they are not notarized and will not be updated.
+> If you used MDPreview, delete `MDPreview.app` after installing Markit, so that Finder uses
+> Markit's Quick Look extensions.
 
 The Finder preview extensions become active after the app is in Applications and has been
 opened once. If the space-bar preview still shows plain text, check that Markit is enabled
@@ -144,7 +135,7 @@ brew install xcodegen
 xcodegen generate
 open MDPreview.xcodeproj       # run / preview / archive in Xcode
 
-./package_app.sh              # or build the DMG from the command line
+./package_app.sh              # or build a local DMG from the command line
 ```
 
 If `swift test` fails with `no such module 'Testing'`, SwiftUI previews don't load, or the app
