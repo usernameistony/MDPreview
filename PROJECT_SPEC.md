@@ -21,7 +21,7 @@
 | **渐进材质** | macOS 26+ 用 Liquid Glass (`.glassEffect`)，14/15 回退 `.ultraThinMaterial` | ✅ 有统一抽象，覆盖面还小 |
 | **解析与 UI 解耦** | 解析核心是独立 SPM 库，可单测、可给扩展复用 | ✅ `MDPreviewCore`，App 与两个 Quick Look 扩展共用 |
 
-**非目标**（当前阶段明确不做）：所见即所得编辑、协同、插件系统、iOS / iPad 版、云同步。
+**非目标**（当前阶段明确不做）：所见即所得编辑、协同、插件系统、云同步、手动保存。iOS / iPadOS 版在 2.1 之后做，见 [§9](#9-路线图roadmap)。
 
 ---
 
@@ -272,21 +272,14 @@ md-reader/
 
 还要确认：从 1.5（没开沙盒）升级到 2.0 后，偏好设置在 `~/Library/Preferences`，沙盒版读的是容器里的那份，字体、主题等设置可能回到默认值。要在真实升级场景里验证；如果确实丢失，用 `container-migration.plist` 迁移。
 
-### v2.1 — 手动保存、分屏同步、更完整的渲染（规划中，未开始）
+### v2.1 — 分屏同步、更完整的渲染（规划中，未开始）
 
-2026-10-10 与用户讨论定下范围。2.0.0 通过审核、发布之后才发 2.1；开发从 `v1.6-sandbox` 切新分支，在那之前不推送。
+2026-10-10 与用户讨论定下范围，2026-10-24 去掉保存一组。2.0.0 已上架，2.1 从 main 切新分支。
 下面每一项都还没验证过，「做法」是思路，不是已经确认的实现。
 
-**保存**
-
-| 项 | 内容 |
-| :-- | :-- |
-| **2.1.1 手动保存** | 现在用 SwiftUI 的 `DocumentGroup` + `FileDocument`，系统默认就地自动保存，所以编辑内容会自己写进文件，关窗也不会问。改成手动：关掉 `NSDocument.autosavesInPlace`，之后 ⌘S、关窗 / 退出时的「是否保存」、标题栏「已编辑」、复原到上次存储的版本都由系统提供。**先做原型验证 `DocumentGroup` 创建的 NSDocument 是否认这个设置**；不认的话退路是自己用 `NSDocument` 子类托管窗口，改动大得多。外部修改的冲突框和热重载（`revert`）按 `document.text` 与磁盘内容比较，和手动保存兼容。待定：阅读区点任务复选框是否算「未保存的修改」（倾向算，行为与编辑一致）。 |
-| **2.1.2 定时保存** | 偏好设置里加「自动保存」：关 / 1 / 5 / 10 分钟，默认关。只保存已有文件路径且有改动的文档；未命名文档不动，避免定时弹出「存储为」面板。 |
-| **2.1.3 崩溃恢复** | 手动保存后，崩溃或断电会丢未保存的内容。用 `NSDocument.autosavesDrafts` 把草稿存到系统的 Autosave Information，不碰原文件，下次打开时恢复。要在沙盒里验证草稿目录可用。 |
-| **2.1.4 未保存提示** | 悬浮状态条上显示「未保存」，不只靠标题栏的小圆点。 |
-
-发布说明里要写明：从 2.1 起不再自动保存。
+2.1.1–2.1.4（手动保存、定时保存、崩溃恢复、「未保存」提示）2026-10-24 取消，编号空着不复用。
+原因：iOS 上 `DocumentGroup` 没有关掉自动写盘的开关，手动保存要自己管草稿、后台被杀和离开文档的确认，代价大；
+两个平台都保持系统默认的就地自动保存，行为一致。需要回退时用系统的「复原到 → 浏览所有版本」。
 
 **分屏**
 
@@ -303,13 +296,76 @@ md-reader/
 | **2.1.8 HTML 块** (G8) | 现在原样显示成等宽灰字。先做有限子集，不引入 WebView，也不用 `NSAttributedString(html:)`（它走 WebKit，只能在主线程）。候选子集：`<!-- 注释 -->` 隐藏；`<br>`；`<img src width>`；`<a href>`；`<kbd>`、`<sub>`、`<sup>`；`<p align="center">` 居中；`<details><summary>` 折叠。其他标签仍按现在的方式原样显示。行内 HTML（swift-markdown 的 `InlineHTML`）一并处理。具体子集做之前再确认。 |
 | **2.1.9 数学公式** | `$…$` 行内、`$$…$$` 块级。swift-markdown 不解析公式，要在文本层识别：代码块和行内代码里不识别；行内 `$` 要求开头后不是空白、结尾前不是空白且后面不是数字，避免把「$5 和 $10」当公式。渲染不用 WebView，需要原生排版 LaTeX 的库，候选是 SwiftMath（CoreText，MIT）——**未验证**它的 macOS 支持、公式覆盖面和体积。静态链接会同时进 App 和两个扩展（G17），也要核对它的隐私清单要求。编辑区的源码着色是否给 `$` 着色，到时再定。 |
 
-范围偏大。如果拖得太久，数学公式最先往后放（2.2）。
+2.1.5 是重点，iOS 版的开合衔接也要用它的行号映射（见下面「iOS / iPadOS 版」）。如果拖得太久，数学公式最先往后放（2.2）。
 
 测试：`ParserTests` 加公式、HTML、行内图片用例；`ReaderRendererTests` / `ReaderPiecesTests` 覆盖新块在增量更新里的 `rendersSame`；`SnapshotTests` 补快照；`PerfProbe` 复查 160KB 文档的增量更新耗时不退化；Quick Look 扩展手动看一遍。编辑区的任何改动都不能干扰输入法组字（v1.1 回归过）。
+
+### iOS / iPadOS 版（规划中，未开始）
+
+2026-10-24 与用户讨论定下方向。Mac 2.1 发布之后开始。下面都还没验证过，API 名字来自 Apple 的 Tech Talk 和开发者论坛汇总，写代码前要再对一遍 API 文档。
+
+**定下的事**
+
+- 原生 iOS 外壳 + 共用核心，不用 Mac Catalyst（Mac 版已经是原生 AppKit）。
+- 最低 iOS / iPadOS 26，可以直接用 Liquid Glass。iPhone Duo 专用 API 用 `#available(iOS 27.1, *)` 判断。
+- 自动实时保存（`DocumentGroup` 默认行为），和 Mac 一致。
+- 在现有 App Store 记录（6821136481）上加 iOS 平台，Bundle ID 相同，通用购买。免费。首发版本号和 Mac 当时的版本对齐。
+- 环境：Xcode 27.1 自带 iPhone Duo 模拟器，Device Hub 可以模拟开合、旋转、半折。
+
+**主要难点：阅读区**
+
+`ReaderRenderer` 用 `NSTextBlock` / `NSTextTable` 画代码块、引用、标题线、分割线和表格，这两个只有 macOS 有。
+iOS 上的思路：渲染器先产出平台无关的块描述（自定义属性标出「代码块 / 引用第 N 层 / 表格」），两个后端各自落地——
+Mac 继续用 `NSTextBlock`（TextKit 1）；iOS 用 TextKit 2 的 `UITextView`，自定义 `NSTextLayoutFragment` 画底色和边框，
+表格做成 attachment 视图（`NSTextAttachmentViewProvider`），表格里的文字不能和正文连着选。要先做原型。
+
+**代码现状**（核心约 5100 行）
+
+| 类别 | 内容 | 做法 |
+| :-- | :-- | :-- |
+| 平台无关 | 解析器、`MarkdownBlock`、`MarkdownEditing`、TOC、字数统计 | 直接用 |
+| 只用到颜色 / 字体 | `AttributedStringBuilder`、`NativeSyntaxHighlighter`、`MarkdownSourceHighlighter`、`ReaderPieces` | 加 `PlatformColor` / `PlatformFont` 类型别名。动态颜色仍要用共享的静态对象 |
+| AppKit 专用 | `ReaderRenderer`、阅读视图、编辑器、行号栏、`DocumentPrinter`、`FolderAccess`、`FileMonitor` | iOS 上另写 |
+
+**阶段**
+
+| 项 | 内容 |
+| :-- | :-- |
+| **i.0 前置** | Mac 2.1.5 的块行号映射；2.1.6 CJK 软换行 |
+| **i.1 核心拆分** | 平台无关部分抽成独立模块；渲染器拆成块描述 + 两个后端；CI 加 iOS 模拟器构建 |
+| **i.2 阅读区原型** | 在 iOS 上验证：代码块 / 引用的底色与边框、表格、跨块选择、复选框点击、160KB 文档的增量更新耗时 |
+| **i.3 iPhone** | `DocumentGroup` + 「文件」App；`UITextView`（TextKit 2）编辑器；键盘上方的 Markdown 符号栏；快捷格式 / 续写 / 缩进复用 `MarkdownEditing`，组字中（`markedTextRange` 不为空）一律不介入 |
+| **i.4 iPad** | 大纲侧边栏；外接键盘快捷键和 iPadOS 26 菜单栏（复用 `.commands`）；多窗口；指针 |
+| **i.5 iPhone Duo** | 见下表 |
+| **i.6 收尾** | iOS 的 Quick Look 预览和缩略图扩展；打印 / 导出 PDF / 分享；商店截图 |
+
+平台差异：热重载用 `NSFilePresenter`（iCloud 文件只能这样收到外部修改），不用目录监听；
+文件夹授权改用文件夹选择器拿 security-scoped bookmark；粘贴 / 拖入图片照旧存 `assets/`。
+
+**iPhone Duo**
+
+已知：外屏 5.4 英寸，size class 和普通 iPhone 一样；内屏 7.6 英寸，接近方形，水平、垂直都是 regular，不遵守 App 声明的方向。
+系统提供合页状态和角度（`onHingeChange` / `UIHingeInteraction`）、避开折痕的布局（`ArrangementView` / `UIArrangementViewController`、`ReservedRegion`），
+和别的 App 并排的 Split View。不支持台前调度。普通 App 不能单独在外屏上画东西。没有单一的「姿态」值，要从合页状态、角度、方向、size class 推断。
+布局用 size class，不用设备型号或方向判断。
+
+思路是「折叠状态即模式」：
+
+| 姿态 | 样子 |
+| :-- | :-- |
+| 合上（外屏） | 以阅读为主，和普通 iPhone 一样。点编辑进入全屏编辑器 |
+| 打开（内屏） | 默认左边编辑、右边预览，分界正好落在合页上，折痕不压文字 |
+| 开合过渡 | 合上时阅读区停在编辑时光标所在的块；打开时编辑器光标回到合上前在读的位置。用 2.1.5 的行号映射。焦点、选区、输入法组字在开合时不能丢，要专门测 |
+| 桌面姿态（下半平放） | 打字时软键盘在下半，编辑器在上半。只读时上半大字阅读，下半是大纲和自动滚动速度（讲稿、菜谱） |
+| 书本姿态（竖握半开） | 两页对开阅读。TextKit 2 一个布局管理器只有一个文本容器，分页难，列为实验项，先做原型 |
+| 和别的 App 并排 | 支持从 Safari 等拖入文字、链接、图片；图片存 `assets/` |
+
+不做：用合页角度做翻页动画之类的效果；外屏显示（系统不允许）。
 
 ### 暂不排期
 
 - 核心库改动态框架（G17）；代码高亮改词法分析（G10）。
+- 手动保存、定时保存（原 2.1.1–2.1.4，2026-10-24 取消，原因见 v2.1）。
 - 图片点击查看（G8 的一部分）。
 - 编辑器当前行整行高亮（需要换掉 `scrollableTextView()`，v1.2 试过会冲突）；括号自动配对（易与输入法冲突）。
 - RTL 审查、更多语言（`ja` / `ko` / `de` / `fr`）。
